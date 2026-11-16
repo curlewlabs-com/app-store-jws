@@ -1,0 +1,36 @@
+{
+  "name": "app-store-jws",
+  "version": "0.1.0",
+  "description": "Verify App Store signed data (JWS) with WebCrypto alone, for Cloudflare Workers and other runtimes without Node's crypto.",
+  "license": "MIT",
+  "author": "Curlew Labs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/curlewlabs-com/app-store-jws.git"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/apple-signed-data.d.ts",
+      "default": "./dist/apple-signed-data.js"
+    },
+    "./x509": {
+      "types": "./dist/x509-certificate.d.ts",
+      "default": "./dist/x509-certificate.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test \"test/*.test.ts\"",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "typescript": "6.0.3"
+  }
+}
