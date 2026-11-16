@@ -17,7 +17,7 @@ const OID_ECDSA_SHA384 = "1.2.840.10045.4.3.3";
 const OID_P384 = "1.3.132.0.34";
 const OID_INTERMEDIATE_MARKER = "1.2.840.113635.100.6.2.1";
 
-function requireParsed(der: Uint8Array<ArrayBuffer>) {
+function requireParsed(der: Uint8Array) {
   const certificate = parseX509Certificate(der);
   if (certificate === null) throw new Error("certificate did not parse");
   return certificate;
@@ -88,7 +88,7 @@ describe("object identifiers", () => {
 describe("refusing what is not strict DER", () => {
   const der = TEST_ROOT;
 
-  function withOuterLength(lengthBytes: number[]): Uint8Array<ArrayBuffer> {
+  function withOuterLength(lengthBytes: number[]): Uint8Array {
     const header = der[1] === undefined ? 0 : der[1];
     const start = header >= 0x80 ? 2 + (header & 0x7f) : 2;
     return Uint8Array.from([0x30, ...lengthBytes, ...der.subarray(start)]);

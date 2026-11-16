@@ -37,32 +37,32 @@ const VERSION_3 = 2;
 export interface X509Certificate {
   // The exact signed bytes, so a signature is checked against what was sent rather
   // than a re-encoding of it.
-  readonly tbsCertificate: Uint8Array<ArrayBuffer>;
+  readonly tbsCertificate: Uint8Array;
   readonly signatureAlgorithmOid: string;
   // The BIT STRING's content: an ASN.1 ECDSA-Sig-Value for the curves used here.
-  readonly signature: Uint8Array<ArrayBuffer>;
+  readonly signature: Uint8Array;
   // Compared byte for byte to link a certificate to its issuer.
-  readonly issuer: Uint8Array<ArrayBuffer>;
-  readonly subject: Uint8Array<ArrayBuffer>;
+  readonly issuer: Uint8Array;
+  readonly subject: Uint8Array;
   readonly notBeforeMs: number;
   readonly notAfterMs: number;
-  readonly subjectPublicKeyInfo: Uint8Array<ArrayBuffer>;
+  readonly subjectPublicKeyInfo: Uint8Array;
   readonly curveOid: string;
   readonly extensionOids: ReadonlySet<string>;
   readonly isCertificateAuthority: boolean;
 }
 
 interface DerElement {
-  readonly content: Uint8Array<ArrayBuffer>;
+  readonly content: Uint8Array;
   // The element including its tag and length, for fields signed or imported whole.
-  readonly encoded: Uint8Array<ArrayBuffer>;
+  readonly encoded: Uint8Array;
 }
 
 class DerReader {
-  private readonly bytes: Uint8Array<ArrayBuffer>;
+  private readonly bytes: Uint8Array;
   private offset = 0;
 
-  constructor(bytes: Uint8Array<ArrayBuffer>) {
+  constructor(bytes: Uint8Array) {
     this.bytes = bytes;
   }
 
@@ -172,9 +172,7 @@ function readTimeMs(reader: DerReader): number | null {
   );
 }
 
-function readBasicConstraintsIsCa(
-  extensionValue: Uint8Array<ArrayBuffer>,
-): boolean {
+function readBasicConstraintsIsCa(extensionValue: Uint8Array): boolean {
   const outer = new DerReader(extensionValue).read(TAG_SEQUENCE);
   if (outer === null) return false;
   const constraints = new DerReader(outer.content);
@@ -220,9 +218,7 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   return a.length === b.length && a.every((byte, i) => byte === b[i]);
 }
 
-export function parseX509Certificate(
-  der: Uint8Array<ArrayBuffer>,
-): X509Certificate | null {
+export function parseX509Certificate(der: Uint8Array): X509Certificate | null {
   const outer = new DerReader(der);
   const certificate = outer.read(TAG_SEQUENCE);
   if (certificate === null || !outer.exhausted) return null;
@@ -304,9 +300,9 @@ export function parseX509Certificate(
 // when it is not one. Each integer has its sign padding removed and is left-padded
 // to the curve's width.
 export function ecdsaSignatureToRaw(
-  der: Uint8Array<ArrayBuffer>,
+  der: Uint8Array,
   componentBytes: number,
-): Uint8Array<ArrayBuffer> | null {
+): Uint8Array | null {
   const outer = new DerReader(der);
   const sequence = outer.read(TAG_SEQUENCE);
   if (sequence === null || !outer.exhausted) return null;
