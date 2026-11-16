@@ -46,7 +46,7 @@ It is not on the npm registry. Install a release's tarball from GitHub, which
 pins it by the integrity hash your lockfile records:
 
 ```sh
-npm install https://github.com/curlewlabs-com/app-store-jws/releases/download/v0.1.1/app-store-jws-0.1.1.tgz
+npm install https://github.com/curlewlabs-com/app-store-jws/releases/download/v0.1.2/app-store-jws-0.1.2.tgz
 ```
 
 Each release's notes give its tarball's SHA-512 integrity, and the tarball has a

@@ -32,35 +32,40 @@ const OID_BASIC_CONSTRAINTS = "2.5.29.19";
 // X.509 version 3 is encoded as the integer 2.
 const VERSION_3 = 2;
 
-export interface X509Certificate {
+// The byte fields are views into the parsed input, so they share its buffer.
+// Web Crypto refuses a view on a SharedArrayBuffer, so the buffer type is kept
+// for a caller handing these fields to it to show they are not on one.
+export interface X509Certificate<
+  TBuffer extends ArrayBufferLike = ArrayBufferLike,
+> {
   // The exact signed bytes, so a signature is checked against what was sent rather
   // than a re-encoding of it.
-  readonly tbsCertificate: Uint8Array;
+  readonly tbsCertificate: Uint8Array<TBuffer>;
   readonly signatureAlgorithmOid: string;
   // The BIT STRING's content: an ASN.1 ECDSA-Sig-Value for the curves used here.
-  readonly signature: Uint8Array;
+  readonly signature: Uint8Array<TBuffer>;
   // Compared byte for byte to link a certificate to its issuer.
-  readonly issuer: Uint8Array;
-  readonly subject: Uint8Array;
+  readonly issuer: Uint8Array<TBuffer>;
+  readonly subject: Uint8Array<TBuffer>;
   readonly notBeforeMs: number;
   readonly notAfterMs: number;
-  readonly subjectPublicKeyInfo: Uint8Array;
+  readonly subjectPublicKeyInfo: Uint8Array<TBuffer>;
   readonly curveOid: string;
   readonly extensionOids: ReadonlySet<string>;
   readonly isCertificateAuthority: boolean;
 }
 
-interface DerElement {
-  readonly content: Uint8Array;
+interface DerElement<TBuffer extends ArrayBufferLike = ArrayBufferLike> {
+  readonly content: Uint8Array<TBuffer>;
   // The element including its tag and length, for fields signed or imported whole.
-  readonly encoded: Uint8Array;
+  readonly encoded: Uint8Array<TBuffer>;
 }
 
-class DerReader {
-  private readonly bytes: Uint8Array;
+class DerReader<TBuffer extends ArrayBufferLike = ArrayBufferLike> {
+  private readonly bytes: Uint8Array<TBuffer>;
   private offset = 0;
 
-  constructor(bytes: Uint8Array) {
+  constructor(bytes: Uint8Array<TBuffer>) {
     this.bytes = bytes;
   }
 
@@ -72,7 +77,7 @@ class DerReader {
     return this.bytes[this.offset];
   }
 
-  read(expectedTag: number): DerElement | null {
+  read(expectedTag: number): DerElement<TBuffer> | null {
     const start = this.offset;
     if (this.bytes[start] !== expectedTag) return null;
     const first = this.bytes[start + 1];
@@ -308,7 +313,9 @@ export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   return a.length === b.length && a.every((byte, i) => byte === b[i]);
 }
 
-export function parseX509Certificate(der: Uint8Array): X509Certificate | null {
+export function parseX509Certificate<TBuffer extends ArrayBufferLike>(
+  der: Uint8Array<TBuffer>,
+): X509Certificate<TBuffer> | null {
   const outer = new DerReader(der);
   const certificate = outer.read(TAG_SEQUENCE);
   if (certificate === null || !outer.exhausted) return null;
@@ -414,7 +421,7 @@ export function parseX509Certificate(der: Uint8Array): X509Certificate | null {
 export function ecdsaSignatureToRaw(
   der: Uint8Array,
   componentBytes: number,
-): Uint8Array | null {
+): Uint8Array<ArrayBuffer> | null {
   const outer = new DerReader(der);
   const sequence = outer.read(TAG_SEQUENCE);
   if (sequence === null || !outer.exhausted) return null;

@@ -10,7 +10,7 @@
 
 import * as chain from "./fixtures/test-chain.ts";
 
-function base64Bytes(text: string): Uint8Array {
+function base64Bytes(text: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(text), (char) => char.charCodeAt(0));
 }
 
