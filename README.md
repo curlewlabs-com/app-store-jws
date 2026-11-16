@@ -142,14 +142,33 @@ What it does **not** do:
   this check relies on instead.
 - **No replay protection.** The same signed payload verifies every time it is
   sent.
-- **The X.509 reader is not a certificate validator.** It reads the fields a
-  chain check needs, and does not hold the rest to every DER rule: INTEGER
-  minimality, calendar-valid times, a nested element's trailing content and
-  duplicate extensions all pass. The chain check does not depend on them, because
-  every field it reads lies inside bytes the issuer's signature covers, apart
-  from the signature value, which is only ever verified. If you use
-  `app-store-jws/x509` on certificates you do not verify against a pinned root,
-  do not rely on it to reject malformed ones.
+- **The X.509 reader is not a certificate validator.** See
+  [Known issues](#known-issues).
+
+## Known issues
+
+The X.509 reader accepts some certificates that are not strict DER, and reads a
+few malformed values instead of refusing them:
+
+- INTEGERs are not checked for minimal or non-negative encoding. That covers the
+  version, the serial number and an ECDSA signature's `r` and `s`, so a negative
+  or padded component is read as its unsigned magnitude.
+- A BOOLEAN longer than one byte is read by its first byte (`basicConstraints`
+  `cA`), and a nested element's trailing content is not rejected.
+- A SubjectPublicKeyInfo with no key, and duplicate extensions, are accepted.
+- A calendar-invalid time, such as 31 February, is normalised to another instant
+  rather than refused. A GeneralizedTime year below 100 is read in the 1900s.
+
+None of these can make `verifyAppleSignedData` return a payload the App Store
+did not sign. Every field the reader takes from a certificate lies inside the
+bytes its issuer's signature covers, so a malformed one can only come from a
+certificate the pinned root's chain signed. The one exception is the signature
+value, and that is only ever verified. A forgery that uses them changes only
+which refusal it gets. If you use `app-store-jws/x509` on certificates you do
+not verify against a pinned root, do not rely on it to reject malformed ones.
+Making the reader strict is planned for a later release, tested against real
+App Store leaf certificates first, so that it cannot begin refusing genuine
+ones.
 
 ## Runtime requirements
 
