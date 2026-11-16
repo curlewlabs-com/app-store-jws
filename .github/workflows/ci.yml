@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.ref_name == 'main' && github.run_id || 'pr' }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          # renovate: datasource=node-version depName=node
+          node-version: 24.22.2
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      # The tests import the TypeScript source; this proves the tarball a
+      # consumer installs carries both entry points and that they load.
+      - name: Install the packed tarball and import it
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          consumer="$RUNNER_TEMP/consumer"
+          mkdir "$consumer"
+          cd "$consumer"
+          npm init --yes >/dev/null
+          npm install --ignore-scripts "$RUNNER_TEMP"/app-store-jws-*.tgz
+          node --input-type=module -e '
+            import { appleRootCertificate, verifyAppleSignedData } from "app-store-jws";
+            import { parseX509Certificate } from "app-store-jws/x509";
+            const root = parseX509Certificate(appleRootCertificate());
+            if (root === null || !root.isCertificateAuthority) throw new Error("root did not parse");
+            const result = await verifyAppleSignedData("e30.e30.e30", appleRootCertificate());
+            if (result.kind !== "refused") throw new Error("junk was not refused");
+          '
+
+  # The one check branch protection requires, so adding a job means listing it
+  # here rather than in the repository settings.
+  conclusion:
+    needs: [test]
+    runs-on: ubuntu-24.04
+    if: always()
+    steps:
+      - name: Require every job to pass
+        env:
+          TEST: ${{ needs.test.result }}
+        run: test "$TEST" = success
