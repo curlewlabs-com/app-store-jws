@@ -1,6 +1,6 @@
 {
   "name": "app-store-jws",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Verify App Store signed data (JWS) with WebCrypto alone, for Cloudflare Workers and other runtimes without Node's crypto.",
   "license": "MIT",
   "author": "Curlew Labs",

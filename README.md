@@ -20,7 +20,9 @@ passes. It has no runtime dependencies. It is two small modules:
   certificate you pin, and `appleRootCertificate`, the Apple Root CA - G3 bytes
   to pin.
 - `app-store-jws/x509` - the strict DER reader the check stands on: it reads one
-  X.509 certificate into the fields a chain check needs, and nothing more.
+  X.509 certificate into the fields a chain check needs, and nothing more. It
+  accepts only DER's one encoding of each element it reads, and refuses
+  anything else.
 
 ## Why it exists
 
@@ -44,7 +46,7 @@ It is not on the npm registry. Install a release's tarball from GitHub, which
 pins it by the integrity hash your lockfile records:
 
 ```sh
-npm install https://github.com/curlewlabs-com/app-store-jws/releases/download/v0.1.0/app-store-jws-0.1.0.tgz
+npm install https://github.com/curlewlabs-com/app-store-jws/releases/download/v0.1.1/app-store-jws-0.1.1.tgz
 ```
 
 Each release's notes give its tarball's SHA-512 integrity, and the tarball has a
@@ -142,33 +144,9 @@ What it does **not** do:
   this check relies on instead.
 - **No replay protection.** The same signed payload verifies every time it is
   sent.
-- **The X.509 reader is not a certificate validator.** See
-  [Known issues](#known-issues).
-
-## Known issues
-
-The X.509 reader accepts some certificates that are not strict DER, and reads a
-few malformed values instead of refusing them:
-
-- INTEGERs are not checked for minimal or non-negative encoding. That covers the
-  version, the serial number and an ECDSA signature's `r` and `s`, so a negative
-  or padded component is read as its unsigned magnitude.
-- A BOOLEAN longer than one byte is read by its first byte (`basicConstraints`
-  `cA`), and a nested element's trailing content is not rejected.
-- A SubjectPublicKeyInfo with no key, and duplicate extensions, are accepted.
-- A calendar-invalid time, such as 31 February, is normalised to another instant
-  rather than refused. A GeneralizedTime year below 100 is read in the 1900s.
-
-None of these can make `verifyAppleSignedData` return a payload the App Store
-did not sign. Every field the reader takes from a certificate lies inside the
-bytes its issuer's signature covers, so a malformed one can only come from a
-certificate the pinned root's chain signed. The one exception is the signature
-value, and that is only ever verified. A forgery that uses them changes only
-which refusal it gets. If you use `app-store-jws/x509` on certificates you do
-not verify against a pinned root, do not rely on it to reject malformed ones.
-Making the reader strict is planned for a later release, tested against real
-App Store leaf certificates first, so that it cannot begin refusing genuine
-ones.
+- **The X.509 reader reads; it does not judge.** It holds each element it
+  reads to DER, but names are compared as encoded bytes rather than parsed, and
+  extensions other than `basicConstraints` are read only for their OIDs.
 
 ## Runtime requirements
 
@@ -191,9 +169,11 @@ npm run typecheck
 npm test
 ```
 
-The tests use Apple's real root and WWDR G6 intermediate to check the DER
-reader against an encoding this package did not produce, and a throwaway chain
-from `test/fixtures/make-test-chain.sh` for everything that needs a signature.
+The tests use Apple's real root, WWDR G6 intermediate and production App Store
+signing leaves to check the DER reader against an encoding this package did not
+produce. A throwaway chain from `test/fixtures/make-test-chain.sh` covers
+everything that needs a signature, and certificates built element by element
+cover each encoding DER forbids.
 
 ## Security
 
