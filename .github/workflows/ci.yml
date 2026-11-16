@@ -24,7 +24,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: .node-version
+          # renovate: datasource=node-version depName=node
+          node-version: 24.22.2
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
@@ -46,3 +47,15 @@ jobs:
             const result = await verifyAppleSignedData("e30.e30.e30", appleRootCertificate());
             if (result.kind !== "refused") throw new Error("junk was not refused");
           '
+
+  # The one check branch protection requires, so adding a job means listing it
+  # here rather than in the repository settings.
+  conclusion:
+    needs: [test]
+    runs-on: ubuntu-24.04
+    if: always()
+    steps:
+      - name: Require every job to pass
+        env:
+          TEST: ${{ needs.test.result }}
+        run: test "$TEST" = success
