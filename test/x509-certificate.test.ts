@@ -23,7 +23,7 @@ const OID_P384 = "1.3.132.0.34";
 const OID_INTERMEDIATE_MARKER = "1.2.840.113635.100.6.2.1";
 const OID_APP_STORE_MARKER = "1.2.840.113635.100.6.11.1";
 
-function requireParsed(der: Uint8Array) {
+function requireParsed(der: Uint8Array<ArrayBuffer>) {
   const certificate = parseX509Certificate(der);
   if (certificate === null) throw new Error("certificate did not parse");
   return certificate;
@@ -231,7 +231,9 @@ const BASELINE: CertificateParts = {
   ),
 };
 
-function certificate(changes: Partial<CertificateParts> = {}): Uint8Array {
+function certificate(
+  changes: Partial<CertificateParts> = {},
+): Uint8Array<ArrayBuffer> {
   const parts = { ...BASELINE, ...changes };
   const name = sequence();
   const tbs = sequence(

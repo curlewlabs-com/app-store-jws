@@ -41,7 +41,7 @@ const APPLE_ROOT_CA_G3_BASE64 =
   "at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM" +
   "6BgD56KyKA==";
 
-export function appleRootCertificate(): Uint8Array {
+export function appleRootCertificate(): Uint8Array<ArrayBuffer> {
   return base64ToBytes(APPLE_ROOT_CA_G3_BASE64);
 }
 
@@ -92,12 +92,12 @@ export type AppleSignatureResult =
 
 const BASE64URL_TEXT = /^[A-Za-z0-9_-]+$/;
 
-function base64ToBytes(text: string): Uint8Array {
+function base64ToBytes(text: string): Uint8Array<ArrayBuffer> {
   const binary = atob(text);
   return Uint8Array.from(binary, (char) => char.charCodeAt(0));
 }
 
-function base64UrlToBytes(text: string): Uint8Array | null {
+function base64UrlToBytes(text: string): Uint8Array<ArrayBuffer> | null {
   if (!BASE64URL_TEXT.test(text) || text.length % 4 === 1) return null;
   return base64ToBytes(text.replaceAll("-", "+").replaceAll("_", "/"));
 }
@@ -118,9 +118,9 @@ function jsonObject(bytes: Uint8Array): Record<string, unknown> | null {
     : null;
 }
 
-function decodeChain(x5c: unknown): Uint8Array[] | null {
+function decodeChain(x5c: unknown): Uint8Array<ArrayBuffer>[] | null {
   if (!Array.isArray(x5c)) return null;
-  const chain: Uint8Array[] = [];
+  const chain: Uint8Array<ArrayBuffer>[] = [];
   for (const entry of x5c) {
     if (typeof entry !== "string") return null;
     try {
@@ -135,7 +135,7 @@ function decodeChain(x5c: unknown): Uint8Array[] | null {
 // The return type is inferred: Node's typings declare CryptoKey as a value
 // rather than a global type, so the spelling Workers and DOM typings accept does
 // not compile under them.
-async function importCertificateKey(certificate: X509Certificate) {
+async function importCertificateKey(certificate: X509Certificate<ArrayBuffer>) {
   const curve = CURVE_BY_OID.get(certificate.curveOid);
   if (curve === undefined) return null;
   return crypto.subtle.importKey(
@@ -148,8 +148,8 @@ async function importCertificateKey(certificate: X509Certificate) {
 }
 
 async function issuerSigned(
-  issuer: X509Certificate,
-  subject: X509Certificate,
+  issuer: X509Certificate<ArrayBuffer>,
+  subject: X509Certificate<ArrayBuffer>,
 ): Promise<boolean> {
   const hash = ECDSA_HASH_BY_SIGNATURE_OID.get(subject.signatureAlgorithmOid);
   const curve = CURVE_BY_OID.get(issuer.curveOid);
