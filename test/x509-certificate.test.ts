@@ -344,6 +344,12 @@ describe("refusing a field encoded any way but DER's one way", () => {
         tlv(0x05, []),
       ),
     },
+    "NULL parameters with content": {
+      algorithm: sequence(oid(OID_BYTES.ecdsaWithSha256), tlv(0x05, [0x00])),
+    },
+    "parameters of a form no chain-check algorithm takes": {
+      algorithm: sequence(oid(OID_BYTES.ecdsaWithSha256), sequence()),
+    },
     "a key's algorithm with no curve": {
       publicKeyInfo: sequence(
         sequence(oid(OID_BYTES.ecPublicKey)),
@@ -385,6 +391,11 @@ describe("refusing a field encoded any way but DER's one way", () => {
       assert.equal(parseX509Certificate(certificate(changes)), null);
     });
   }
+
+  it("reads empty NULL parameters, as an RSA algorithm writes them", () => {
+    const algorithm = sequence(oid(OID_BYTES.ecdsaWithSha256), tlv(0x05, []));
+    assert.notEqual(parseX509Certificate(certificate({ algorithm })), null);
+  });
 
   it("reads 29 February in a leap year", () => {
     const parsed = requireParsed(

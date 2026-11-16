@@ -20,13 +20,11 @@ const TAG_BOOLEAN = 0x01;
 const TAG_INTEGER = 0x02;
 const TAG_BIT_STRING = 0x03;
 const TAG_OCTET_STRING = 0x04;
+const TAG_NULL = 0x05;
 const TAG_OID = 0x06;
 const TAG_UTC_TIME = 0x17;
 const TAG_GENERALIZED_TIME = 0x18;
 const TAG_SEQUENCE = 0x30;
-// The low five bits all set mean a tag continued in further bytes, which no
-// certificate field uses.
-const TAG_NUMBER_CONTINUES = 0x1f;
 const TAG_VERSION = 0xa0;
 const TAG_EXTENSIONS = 0xa3;
 
@@ -72,18 +70,6 @@ class DerReader {
 
   peekTag(): number | undefined {
     return this.bytes[this.offset];
-  }
-
-  // The next element whatever its tag, for an ANY field.
-  readAny(): DerElement | null {
-    const tag = this.peekTag();
-    if (
-      tag === undefined ||
-      (tag & TAG_NUMBER_CONTINUES) === TAG_NUMBER_CONTINUES
-    ) {
-      return null;
-    }
-    return this.read(tag);
   }
 
   read(expectedTag: number): DerElement | null {
@@ -158,17 +144,24 @@ function readDefaultFalse(reader: DerReader): boolean | null {
   return readBoolean(reader) === true ? true : null;
 }
 
-// An AlgorithmIdentifier: the algorithm's OID, then at most one parameters
-// element of whatever type the algorithm defines.
+// An AlgorithmIdentifier: the algorithm's OID, then its parameters in one of
+// the forms a chain check's algorithms take - none (an ECDSA signature), an
+// empty NULL (RSA) or an OID (an EC key's curve). Parameters of any other form
+// are refused rather than carried unread.
 function readAlgorithm(
   content: Uint8Array,
-): { oid: string; parameters: DerElement | null } | null {
+): { oid: string; parametersOid: string | null } | null {
   const fields = new DerReader(content);
   const oid = readOid(fields);
   if (oid === null) return null;
-  const parameters = fields.exhausted ? null : fields.readAny();
-  if (!fields.exhausted) return null;
-  return { oid, parameters };
+  let parametersOid: string | null = null;
+  if (fields.peekTag() === TAG_NULL) {
+    if (fields.read(TAG_NULL)?.content.length !== 0) return null;
+  } else if (fields.peekTag() === TAG_OID) {
+    parametersOid = readOid(fields);
+    if (parametersOid === null) return null;
+  }
+  return fields.exhausted ? { oid, parametersOid } : null;
 }
 
 function decodeOid(content: Uint8Array): string | null {
@@ -200,10 +193,6 @@ function decodeOid(content: Uint8Array): string | null {
 function readOid(reader: DerReader): string | null {
   const element = reader.read(TAG_OID);
   return element === null ? null : decodeOid(element.content);
-}
-
-function decodeOidElement(element: DerElement): string | null {
-  return element.encoded[0] === TAG_OID ? decodeOid(element.content) : null;
 }
 
 const MAX_TIME_TEXT_BYTES = 15;
@@ -398,10 +387,8 @@ export function parseX509Certificate(der: Uint8Array): X509Certificate | null {
     return null;
   }
   // An EC key's parameters name its curve.
-  const keyAlgorithm = readAlgorithm(keyAlgorithmElement.content);
-  if (keyAlgorithm?.parameters == null) return null;
-  const curveOid = decodeOidElement(keyAlgorithm.parameters);
-  if (curveOid === null) return null;
+  const curveOid = readAlgorithm(keyAlgorithmElement.content)?.parametersOid;
+  if (curveOid === null || curveOid === undefined) return null;
 
   const extensions = readExtensions(fields);
   if (extensions === null || !fields.exhausted) return null;
