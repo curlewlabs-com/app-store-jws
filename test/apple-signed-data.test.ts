@@ -87,6 +87,48 @@ describe("verifyAppleSignedData", () => {
     });
   });
 
+  // Matching names are what an attacker can copy; only the signatures tie
+  // each certificate to the key above it.
+  it("refuses an intermediate the root's key did not sign", async () => {
+    const jws = await signAsAppleTest(
+      payload,
+      TEST_CHAIN.intermediateWrongSigner,
+    );
+    assert.deepEqual(await verifyTest(jws), {
+      kind: "refused",
+      reason: "bad_chain_signature",
+    });
+  });
+
+  it("refuses a leaf the intermediate's key did not sign", async () => {
+    const jws = await signAsAppleTest(payload, TEST_CHAIN.leafWrongSigner);
+    assert.deepEqual(await verifyTest(jws), {
+      kind: "refused",
+      reason: "bad_chain_signature",
+    });
+  });
+
+  // These links carry genuine signatures, so only the name comparison can
+  // refuse them.
+  it("refuses an intermediate issued under another name than the root's", async () => {
+    const jws = await signAsAppleTest(
+      payload,
+      TEST_CHAIN.intermediateWrongIssuer,
+    );
+    assert.deepEqual(await verifyTest(jws), {
+      kind: "refused",
+      reason: "broken_chain_link",
+    });
+  });
+
+  it("refuses a leaf whose issuer is not the intermediate's name", async () => {
+    const jws = await signAsAppleTest(payload, TEST_CHAIN.intermediateRenamed);
+    assert.deepEqual(await verifyTest(jws), {
+      kind: "refused",
+      reason: "broken_chain_link",
+    });
+  });
+
   it("refuses a chain of any other length", async () => {
     const jws = await signAsAppleTest(payload, TEST_CHAIN.noIntermediate);
     assert.deepEqual(await verifyTest(jws), {

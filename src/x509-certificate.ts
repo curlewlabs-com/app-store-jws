@@ -2,10 +2,22 @@
 // check needs. Cloudflare Workers has no X.509 API without nodejs_compat, and the
 // third-party parsers carry far more than these few fields, so this walks the
 // structure itself.
-// DER is length-prefixed, so nothing here guesses: every element is read at its
-// declared tag and length, inside its parent's bounds, and any departure from the
-// shape answers null. The input is attacker-supplied until a signature proves
-// otherwise, which is why a failure is a value rather than a throw.
+// DER is length-prefixed, so nothing here guesses at a boundary: every element it
+// reads is read at its declared tag and length, inside its parent's bounds, and
+// a structure it cannot read that way answers null. The input is
+// attacker-supplied until a signature proves otherwise, which is why a failure
+// is a value rather than a throw.
+//
+// It is a reader for a chain check, not a validator. It does not hold the
+// fields it skips, or the values it reads, to every X.690 rule: INTEGER
+// minimality, calendar-valid times, a nested element's trailing content, and
+// duplicate extensions all pass. A chain check does not depend on them: every
+// field read from a certificate lies inside the tbsCertificate bytes its
+// issuer's signature covers, except the signature value itself, which is only
+// ever verified. So a malformed field can come only from a certificate its
+// issuer signed, and leniency can change which refusal a forgery gets but not
+// whether it verifies. Code reading certificates it will not verify against a
+// pinned root should not rely on this reader to reject malformed ones.
 
 const TAG_BOOLEAN = 0x01;
 const TAG_INTEGER = 0x02;
@@ -98,24 +110,29 @@ class DerReader {
 }
 
 function decodeOid(content: Uint8Array): string | null {
-  const first = content[0];
-  if (first === undefined) return null;
-  const arcs = [Math.min(Math.floor(first / 40), 2)];
-  arcs.push(first - (arcs[0] ?? 0) * 40);
-  let arc = 0;
-  let arcStarted = false;
-  for (const byte of content.subarray(1)) {
-    // A leading 0x80 pads an arc, which DER forbids.
-    if (!arcStarted && byte === 0x80) return null;
-    arc = arc * 128 + (byte & 0x7f);
-    if (!Number.isSafeInteger(arc)) return null;
-    arcStarted = (byte & 0x80) !== 0;
-    if (!arcStarted) {
-      arcs.push(arc);
-      arc = 0;
+  const subidentifiers: number[] = [];
+  let value = 0;
+  let started = false;
+  for (const byte of content) {
+    // A leading 0x80 pads a subidentifier, which DER forbids.
+    if (!started && byte === 0x80) return null;
+    value = value * 128 + (byte & 0x7f);
+    if (!Number.isSafeInteger(value)) return null;
+    started = (byte & 0x80) !== 0;
+    if (!started) {
+      subidentifiers.push(value);
+      value = 0;
     }
   }
-  return arcStarted ? null : arcs.join(".");
+  const first = subidentifiers[0];
+  if (started || first === undefined) return null;
+  // The first subidentifier packs the first two arcs as 40 * first + second.
+  // The first arc is 0, 1 or 2, and only under 2 can the second exceed 39, so
+  // the subidentifier can run to several bytes like any other.
+  const firstArc = Math.min(Math.floor(first / 40), 2);
+  return [firstArc, first - firstArc * 40, ...subidentifiers.slice(1)].join(
+    ".",
+  );
 }
 
 function readOid(reader: DerReader): string | null {

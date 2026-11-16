@@ -57,7 +57,24 @@ export const TEST_CHAIN = {
   ],
   intermediateNotCa: [chain.leaf, chain.intermediate_not_ca, chain.root],
   noIntermediate: [chain.leaf, chain.root],
+  // Names that link, signatures by a key with the right name but not the
+  // chain's.
+  intermediateWrongSigner: [
+    chain.leaf,
+    chain.intermediate_wrong_signer,
+    chain.root,
+  ],
+  leafWrongSigner: [chain.leaf_wrong_signer, chain.intermediate, chain.root],
+  // Signatures that hold, under names that do not link.
+  intermediateWrongIssuer: [
+    chain.leaf,
+    chain.intermediate_wrong_issuer,
+    chain.root,
+  ],
+  intermediateRenamed: [chain.leaf, chain.intermediate_renamed, chain.root],
 } as const;
+
+export const TEST_LEAF = base64Bytes(chain.leaf);
 
 export function jwsPart(value: unknown): string {
   return base64Url(new TextEncoder().encode(JSON.stringify(value)));

@@ -34,10 +34,9 @@ check needs.
 
 Everything the check needs is in WebCrypto: ECDSA verification on P-256 and
 P-384, plus `atob` and `TextDecoder`. What is missing is reading the
-certificates, so this package does that itself, strictly: every DER element is
-read at its declared tag and length, and any departure from strict DER is a
-refusal rather than a guess, because a certificate that parses more than one way
-is how signature checks get bypassed.
+certificates, so this package does that itself: every DER element it reads is
+read at its declared tag and length inside its parent's bounds, and a structure
+it cannot read that way is a refusal rather than a guess.
 
 ## How to use it
 
@@ -143,6 +142,14 @@ What it does **not** do:
   this check relies on instead.
 - **No replay protection.** The same signed payload verifies every time it is
   sent.
+- **The X.509 reader is not a certificate validator.** It reads the fields a
+  chain check needs, and does not hold the rest to every DER rule: INTEGER
+  minimality, calendar-valid times, a nested element's trailing content and
+  duplicate extensions all pass. The chain check does not depend on them, because
+  every field it reads lies inside bytes the issuer's signature covers, apart
+  from the signature value, which is only ever verified. If you use
+  `app-store-jws/x509` on certificates you do not verify against a pinned root,
+  do not rely on it to reject malformed ones.
 
 ## Runtime requirements
 

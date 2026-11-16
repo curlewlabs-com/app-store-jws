@@ -11,7 +11,7 @@ import {
   ecdsaSignatureToRaw,
   parseX509Certificate,
 } from "../src/x509-certificate.ts";
-import { REAL_WWDR_G6, TEST_ROOT } from "./fixture.ts";
+import { REAL_WWDR_G6, TEST_LEAF, TEST_ROOT } from "./fixture.ts";
 
 const OID_ECDSA_SHA384 = "1.2.840.10045.4.3.3";
 const OID_P384 = "1.3.132.0.34";
@@ -72,6 +72,16 @@ describe("Apple's published certificates", () => {
       flipped,
     );
     assert.equal(tampered, false);
+  });
+});
+
+describe("object identifiers", () => {
+  // OpenSSL encodes 2.999.1 with a two-byte first subidentifier (88 37), which
+  // a reader that takes that subidentifier as one byte names 2.56.55.1.
+  it("decodes a first subidentifier longer than one byte", () => {
+    const leaf = requireParsed(TEST_LEAF);
+    assert.equal(leaf.extensionOids.has("2.999.1"), true);
+    assert.equal(leaf.extensionOids.has("1.2.840.113635.100.6.11.1"), true);
   });
 });
 
