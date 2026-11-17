@@ -12,6 +12,11 @@ npm test
 
 ## Releasing
 
+A patch or minor release needs no approval: whoever cuts it follows the steps
+below in order, on a `main` commit whose required checks have passed. A major
+version, a 1.0, or a minor before 1.0 that changes an interface consumers use
+needs the maintainer's explicit approval before its tag is pushed.
+
 A release is a fixed `vMAJOR.MINOR.PATCH` tag on a `main` commit and the GitHub
 Release published on it, with the `npm pack` tarball as its asset. The package
 is not on the npm registry: consumers install that asset by its URL.
