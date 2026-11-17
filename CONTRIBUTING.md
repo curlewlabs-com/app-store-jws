@@ -52,6 +52,7 @@ is not on the npm registry: consumers install that asset by its URL.
    ```sh
    git switch --detach v0.2.1
    npm ci --ignore-scripts
+   mkdir ../local
    npm pack --pack-destination ../local
    gh release download v0.2.1 --pattern '*.tgz' --dir ../draft
    cmp ../local/*.tgz ../draft/*.tgz
@@ -63,6 +64,8 @@ is not on the npm registry: consumers install that asset by its URL.
    below it. Then publish the draft:
 
    ```sh
+   gh release view v0.2.1 --json body --jq .body > notes.md
+   # add the paragraph to notes.md
    gh release edit v0.2.1 --notes-file notes.md --draft=false
    ```
 
