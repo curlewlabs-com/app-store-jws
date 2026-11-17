@@ -38,10 +38,10 @@ jobs:
           mkdir "$consumer"
           cd "$consumer"
           npm init --yes >/dev/null
-          npm install --ignore-scripts "$RUNNER_TEMP"/app-store-jws-*.tgz
+          npm install --ignore-scripts "$RUNNER_TEMP"/curlewlabs-com-app-store-jws-*.tgz
           node --input-type=module -e '
-            import { appleRootCertificate, verifyAppleSignedData } from "app-store-jws";
-            import { parseX509Certificate } from "app-store-jws/x509";
+            import { appleRootCertificate, verifyAppleSignedData } from "@curlewlabs-com/app-store-jws";
+            import { parseX509Certificate } from "@curlewlabs-com/app-store-jws/x509";
             const root = parseX509Certificate(appleRootCertificate());
             if (root === null || !root.isCertificateAuthority) throw new Error("root did not parse");
             const result = await verifyAppleSignedData("e30.e30.e30", appleRootCertificate());
