@@ -16,13 +16,13 @@ payload.
 This package does that check and returns the decoded payload only when it
 passes. It has no runtime dependencies. It is two small modules:
 
-- `app-store-jws` - `verifyAppleSignedData`, which checks one JWS against a root
-  certificate you pin, and `appleRootCertificate`, the Apple Root CA - G3 bytes
-  to pin.
-- `app-store-jws/x509` - the strict DER reader the check stands on: it reads one
-  X.509 certificate into the fields a chain check needs, and nothing more. It
-  accepts only DER's one encoding of each element it reads, and refuses
-  anything else.
+- `@curlewlabs-com/app-store-jws` - `verifyAppleSignedData`, which checks one
+  JWS against a root certificate you pin, and `appleRootCertificate`, the Apple
+  Root CA - G3 bytes to pin.
+- `@curlewlabs-com/app-store-jws/x509` - the strict DER reader the check stands
+  on: it reads one X.509 certificate into the fields a chain check needs, and
+  nothing more. It accepts only DER's one encoding of each element it reads,
+  and refuses anything else.
 
 ## Why it exists
 
@@ -42,11 +42,11 @@ it cannot read that way is a refusal rather than a guess.
 
 ## How to use it
 
-It is not on the npm registry. Install a release's tarball from GitHub, which
-pins it by the integrity hash your lockfile records:
+This package is not published to the npm registry. Install a release's tarball
+from GitHub, which pins it by the integrity hash your lockfile records:
 
 ```sh
-npm install https://github.com/curlewlabs-com/app-store-jws/releases/download/v0.1.2/app-store-jws-0.1.2.tgz
+npm install https://github.com/curlewlabs-com/app-store-jws/releases/download/v0.2.0/curlewlabs-com-app-store-jws-0.2.0.tgz
 ```
 
 Each release's notes give its tarball's SHA-512 integrity, and the tarball has a
@@ -56,7 +56,7 @@ curlewlabs-com/app-store-jws`).
 A Worker receiving App Store Server Notifications:
 
 ```ts
-import { appleRootCertificate, verifyAppleSignedData } from "app-store-jws";
+import { appleRootCertificate, verifyAppleSignedData } from "@curlewlabs-com/app-store-jws";
 
 const appleRoot = appleRootCertificate();
 
