@@ -1,5 +1,11 @@
 # Contributing
 
+Thanks for your interest in improving `app-store-jws`. The bar for a change is
+whether a payload is still returned only when the App Store signed it, and
+anything else is still refused rather than thrown on. Bug fixes, support for a
+runtime it does not run on yet, test coverage from more of Apple's real
+certificates, and clearer docs are all welcome.
+
 Open a pull request that says what behavior changes and how you verified it.
 CI runs these on every pull request, with the Node version
 `.github/workflows/ci.yml` pins:
@@ -9,6 +15,17 @@ npm ci --ignore-scripts
 npm run typecheck
 npm test
 ```
+
+## Before a large change
+
+Open an issue describing the problem first. `src/apple-signed-data.ts` carries
+the verification guarantee - the pinned root compared byte for byte, Apple's
+role markers on the intermediate and the leaf, certificate validity judged at
+the payload's `signedDate` - and `src/x509-certificate.ts` accepts only DER's
+one encoding of each element it reads. The README's "What is verified, and what
+is not" records what is left out by design. A short discussion up front saves
+rework. A fix for a vulnerability goes through [SECURITY.md](SECURITY.md)
+instead.
 
 ## Releasing
 
