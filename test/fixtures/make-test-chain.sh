@@ -14,7 +14,10 @@ set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+RUN_COMPLETE=0
+# _trap_rc is assigned inside the trap string, which shellcheck does not follow.
+# shellcheck disable=SC2154
+trap '_trap_rc=$?; [ "$RUN_COMPLETE" = 1 ] || [ "$_trap_rc" -ne 0 ] || _trap_rc=1; rm -rf "$work"; exit "$_trap_rc"' EXIT
 cd "$work"
 
 not_before=20260101000000Z
@@ -107,3 +110,4 @@ b64() { openssl base64 -A -in "$1"; }
   done
   printf 'export const leaf_key_pkcs8 = "%s";\n' "$(b64 leaf.pkcs8)"
 } >"$here/test-chain.ts"
+RUN_COMPLETE=1
