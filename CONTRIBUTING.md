@@ -94,3 +94,9 @@ is not on the npm registry: consumers install that asset by its URL.
 Publishing cannot be undone. The repository refuses updates and deletions of
 `v*.*.*` tags, and a published release, its tag and its asset are immutable, so
 a mistake in a published release is fixed by a new version.
+
+## License
+
+By submitting a contribution for inclusion in this project, you agree that it
+is licensed under the MIT and Apache-2.0 licenses, as the README's License
+section describes, without any additional terms or conditions.
