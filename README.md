@@ -56,7 +56,10 @@ curlewlabs-com/app-store-jws`).
 A Worker receiving App Store Server Notifications:
 
 ```ts
-import { appleRootCertificate, verifyAppleSignedData } from "@curlewlabs-com/app-store-jws";
+import {
+  appleRootCertificate,
+  verifyAppleSignedData,
+} from "@curlewlabs-com/app-store-jws";
 
 const appleRoot = appleRootCertificate();
 
